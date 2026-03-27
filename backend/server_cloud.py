@@ -8,7 +8,7 @@ import database
 from diagnostic import analyze_telemetry
 from prognostic import coil_temp_prognostic
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 import os
 
 app = FastAPI(title="WPT Cloud Backend (Task 4)")
@@ -19,8 +19,7 @@ app.mount("/dashboard", StaticFiles(directory=frontend_path, html=True), name="f
 
 @app.get("/")
 def read_index():
-    return FileResponse(os.path.join(frontend_path, "index.html"))
-
+    return RedirectResponse(url="/dashboard/")
 # Configuration CORS pour autoriser le frontend (Tâche 5) à faire des requêtes
 app.add_middleware(
     CORSMiddleware,
