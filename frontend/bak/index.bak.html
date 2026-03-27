@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WPT Enterprise Supervision</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #050505; color: #E2E8F0; /* gray-100 */
+        color: #111827; /* gray-900 */
+      }
+      .card {
+        background-color: #0A0A0A; border-color: #1E1E1E; box-shadow: 0 0 10px rgba(0,0,0,0.5); border-color: #1E293B;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        box-shadow:
+          0 1px 3px 0 rgba(0, 0, 0, 0.1),
+          0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      }
+      /* Custom scrollbar for table */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <!-- Top Navigation -->
+    <nav
+      class="bg-gray-900 border-b border-gray-800 sticky top-0 z-10 w-full shadow-sm"
+    >
+      <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-12">
+          <div class="flex items-center">
+            <div class="flex-shrink-0 flex items-center gap-3">
+              <div
+                class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow"
+              >
+                <i class="fas fa-bolt"></i>
+              </div>
+              <span class="font-bold text-xl tracking-tight text-white"
+                >ChargeOps<span class="text-blue-600 font-light">AI</span></span
+              >
+            </div>
+            <div class="hidden md:ml-10 md:flex md:space-x-8">
+              <a
+                href="index.html"
+                class="border-blue-500 text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+              >
+                Supervision
+              </a>
+              <a
+                href="weights.html"
+                class="border-transparent text-gray-400 hover:border-gray-700 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+              >
+                Transformer Weights
+              </a>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="flex flex-col items-end">
+              <span
+                class="text-xs text-gray-400 uppercase tracking-wider font-semibold"
+                >System Health</span
+              >
+              <div class="flex items-center gap-2">
+                                  <div class="relative flex h-2.5 w-2.5 mt-0.5">
+                    <span id="health-dot-ping"
+                      class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
+                    ></span>
+                    <span id="health-dot"
+                      class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"
+                    ></span>
+                  </div>
+                  <span id="health-index" class="text-lg font-bold text-white"
+                    >100%</span
+                  >
+                  <span id="health-alert-text" class="ml-1 px-2 py-0.5 text-[10px] font-bold rounded bg-green-100 text-green-800 border border-green-200 uppercase">NO ALERT</span>
+                </div>
+              </div>
+            <div
+              id="health-badge"
+              class="ml-2 w-10 h-10 rounded-full border-2 border-green-500 flex items-center justify-center bg-green-50 text-green-600"
+            >
+              <i class="fas fa-check"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <!-- Page Header -->
+      <div
+        class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between"
+      >
+        <div>
+          <h1 class="text-2xl font-bold text-white">
+            Live Infrastructure Monitoring
+          </h1>
+          <p class="mt-1 text-sm text-gray-400">
+            <i class="fas fa-satellite-dish mr-1 text-blue-500"></i> Wireless
+            Power Transfer Station 01. Analysed via PyTorch Neural Networks.
+          </p>
+        </div>
+        <div class="mt-4 md:mt-0 flex gap-3">
+          <button
+            class="bg-gray-900 border border-gray-700 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-800 transition"
+          >
+            <i class="fas fa-download mr-1.5"></i> Export
+          </button>
+          <button
+            class="bg-blue-600 border border-transparent text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover:bg-blue-700 transition"
+          >
+            <i class="fas fa-microchip mr-1.5"></i> Diagnostic Model
+          </button>
+        </div>
+      </div>
+
+      <!-- Key Metrics Row -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+        <!-- Metric 1 -->
+        <div class="card p-3 relative overflow-hidden group">
+          <div
+            class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition text-5xl text-blue-600"
+          >
+            <i class="fas fa-battery-half"></i>
+          </div>
+          <p class="text-sm font-medium text-gray-400 mb-1">Rendement</p>
+          <div class="flex items-baseline gap-2">
+            <h3 class="text-3xl font-bold text-white" id="val-eff">--</h3>
+            <span class="text-sm font-medium text-gray-400">%</span>
+          </div>
+          <div
+            class="mt-4 h-1.5 w-full bg-gray-800 rounded-full overflow-hidden"
+          >
+            <div
+              class="h-full bg-blue-500 transition-all duration-500"
+              style="width: 0%"
+              id="bar-eff"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Metric 2: Charging Status -->
+        <div class="card p-3 relative overflow-hidden group">
+          <div
+            class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition text-5xl text-blue-500"
+          >
+            <i class="fas fa-charging-station"></i>
+          </div>
+          <p class="text-sm font-medium text-gray-400 mb-1">Charging Status</p>
+          <div class="flex items-baseline gap-2">
+            <h3 class="text-3xl font-bold text-white" id="val-charging">
+              --
+            </h3>
+          </div>
+          <div
+            class="mt-4 h-1.5 w-full bg-gray-800 rounded-full overflow-hidden"
+          >
+            <div
+              class="h-full bg-blue-500 transition-all duration-500"
+              style="width: 100%"
+              id="bar-charging"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Metric 3 -->
+        <div class="card p-3 relative overflow-hidden group">
+          <div
+            class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition text-5xl text-purple-600"
+          >
+            <i class="fas fa-wave-square"></i>
+          </div>
+          <p class="text-sm font-medium text-gray-400 mb-1">Frequency</p>
+          <div class="flex items-baseline gap-2">
+            <h3 class="text-3xl font-bold text-white" id="val-ptx">--</h3>
+            <span class="text-sm font-medium text-gray-400">kHz</span>
+          </div>
+          <div
+            class="mt-4 text-xs font-medium text-green-600 flex items-center"
+          >
+            <i class="fas fa-arrow-up mr-1 mt-px"></i> Optimized Resonance
+          </div>
+        </div>
+
+        <!-- Metric 4 -->
+        <div class="card p-3 relative overflow-hidden group">
+          <div
+            class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition text-5xl text-teal-600"
+          >
+            <i class="fas fa-link"></i>
+          </div>
+          <p class="text-sm font-medium text-gray-400 mb-1">
+            Coupling Factor (k)
+          </p>
+          <div class="flex items-baseline gap-2">
+            <h3 class="text-3xl font-bold text-white" id="val-k">--</h3>
+          </div>
+          <div class="mt-4 text-xs font-medium text-gray-400 flex items-center">
+            Vehicle Alignment Status
+          </div>
+        </div>
+      </div>
+
+      <!-- Secondary Metrics Row -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <!-- Metric 5: Temp Bobine -->
+        <div class="card p-3 relative overflow-hidden group">
+          <div
+            class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition text-5xl text-orange-600"
+          >
+            <i class="fas fa-temperature-high"></i>
+          </div>
+          <p class="text-sm font-medium text-gray-400 mb-1">
+            Température de la Bobine
+          </p>
+          <div class="flex items-baseline gap-2">
+            <h3 class="text-3xl font-bold text-white" id="val-temp-coil">
+              --
+            </h3>
+            <span class="text-sm font-medium text-gray-400">°C</span>
+          </div>
+        </div>
+
+        <!-- Metric 6: Temp Inverter -->
+        <div class="card p-3 relative overflow-hidden group">
+          <div
+            class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition text-5xl text-red-600"
+          >
+            <i class="fas fa-microchip"></i>
+          </div>
+          <p class="text-sm font-medium text-gray-400 mb-1">
+            Température de la Pièce Électronique
+          </p>
+          <div class="flex items-baseline gap-2">
+            <h3 class="text-3xl font-bold text-white" id="val-temp-inv">
+              --
+            </h3>
+            <span class="text-sm font-medium text-gray-400">°C</span>
+          </div>
+        </div>
+
+        <!-- Metric 7: Q Factor -->
+        <div class="card p-3 relative overflow-hidden group">
+          <div
+            class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition text-5xl text-indigo-600"
+          >
+            <i class="fas fa-tachometer-alt"></i>
+          </div>
+          <p class="text-sm font-medium text-gray-400 mb-1">
+            Facteur de Qualité (Q)
+          </p>
+          <div class="flex items-baseline gap-2">
+            <h3 class="text-3xl font-bold text-white" id="val-qfactor">
+              --
+            </h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Layout Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column: Electrical Values Card -->
+        <div class="lg:col-span-2 flex flex-col gap-8">
+          <div class="card flex-1 flex flex-col">
+            <div
+              class="px-6 py-5 border-b border-gray-100 flex items-center justify-between"
+            >
+              <h2 class="text-lg font-semibold text-white">
+                Electrical Parameters
+              </h2>
+            </div>
+            <div class="p-3 flex-1 flex flex-col justify-center gap-3">
+              <div class="grid grid-cols-2 gap-3">
+                <!-- ROW 1: PRIMARY/SECONDARY VOLTAGE -->
+                <div
+                  class="bg-gray-800 rounded-xl p-3 border border-gray-100 shadow-sm relative overflow-hidden group hover:border-gray-700 transition-colors"
+                >
+                  <div
+                    class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition text-5xl text-gray-100"
+                  >
+                    <i class="fas fa-bolt"></i>
+                  </div>
+                  <p
+                    class="text-sm font-bold text-gray-400 mb-1 uppercase tracking-wider"
+                  >
+                    Primary Voltage (V1)
+                  </p>
+                  <div class="flex items-baseline gap-2">
+                    <h3 class="text-4xl font-black text-white" id="val-v1">
+                      --
+                    </h3>
+                    <span class="text-lg font-bold text-gray-400">V</span>
+                  </div>
+                </div>
+
+                <div
+                  class="bg-gray-800 rounded-xl p-3 border border-gray-100 shadow-sm relative overflow-hidden group hover:border-gray-700 transition-colors"
+                >
+                  <div
+                    class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition text-5xl text-gray-100"
+                  >
+                    <i class="fas fa-bolt"></i>
+                  </div>
+                  <p
+                    class="text-sm font-bold text-gray-400 mb-1 uppercase tracking-wider"
+                  >
+                    Secondary Voltage (V2)
+                  </p>
+                  <div class="flex items-baseline gap-2">
+                    <h3 class="text-4xl font-black text-white" id="val-v2">
+                      --
+                    </h3>
+                    <span class="text-lg font-bold text-gray-400">V</span>
+                  </div>
+                </div>
+
+                <!-- ROW 2: PRIMARY/SECONDARY CURRENT -->
+                <div
+                  class="bg-blue-50/50 rounded-xl p-3 border border-blue-100 shadow-sm relative overflow-hidden group hover:border-blue-300 transition-colors"
+                >
+                  <div
+                    class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition text-5xl text-blue-800"
+                  >
+                    <i class="fas fa-plug"></i>
+                  </div>
+                  <p
+                    class="text-sm font-bold text-blue-600 mb-1 uppercase tracking-wider"
+                  >
+                    Primary Current (I1)
+                  </p>
+                  <div class="flex items-baseline gap-2">
+                    <h3 class="text-4xl font-black text-white" id="val-i1">
+                      --
+                    </h3>
+                    <span class="text-lg font-bold text-gray-400">A</span>
+                  </div>
+                </div>
+
+                <div
+                  class="bg-blue-50/50 rounded-xl p-3 border border-blue-100 shadow-sm relative overflow-hidden group hover:border-blue-300 transition-colors"
+                >
+                  <div
+                    class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition text-5xl text-blue-800"
+                  >
+                    <i class="fas fa-plug"></i>
+                  </div>
+                  <p
+                    class="text-sm font-bold text-blue-600 mb-1 uppercase tracking-wider"
+                  >
+                    Secondary Current (I2)
+                  </p>
+                  <div class="flex items-baseline gap-2">
+                    <h3 class="text-4xl font-black text-white" id="val-i2">
+                      --
+                    </h3>
+                    <span class="text-lg font-bold text-gray-400">A</span>
+                  </div>
+                </div>
+
+                <!-- ROW 3: PRIMARY/SECONDARY POWER -->
+                <div
+                  class="bg-indigo-50/50 rounded-xl p-3 border border-indigo-100 shadow-sm relative overflow-hidden group hover:border-indigo-300 transition-colors"
+                >
+                  <div
+                    class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition text-5xl text-indigo-800"
+                  >
+                    <i class="fas fa-charging-station"></i>
+                  </div>
+                  <p
+                    class="text-sm font-bold text-indigo-600 mb-1 uppercase tracking-wider"
+                  >
+                    Primary Power (P1)
+                  </p>
+                  <div class="flex items-baseline gap-2">
+                    <h3 class="text-4xl font-black text-white" id="val-p1">
+                      --
+                    </h3>
+                    <span class="text-lg font-bold text-gray-400">kW</span>
+                  </div>
+                </div>
+
+                <div
+                  class="bg-purple-50/50 rounded-xl p-3 border border-purple-100 shadow-sm relative overflow-hidden group hover:border-purple-300 transition-colors"
+                >
+                  <div
+                    class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition text-5xl text-purple-800"
+                  >
+                    <i class="fas fa-battery-full"></i>
+                  </div>
+                  <p
+                    class="text-sm font-bold text-purple-600 mb-1 uppercase tracking-wider"
+                  >
+                    Secondary Power (P2)
+                  </p>
+                  <div class="flex items-baseline gap-2">
+                    <h3 class="text-4xl font-black text-white" id="val-p2">
+                      --
+                    </h3>
+                    <span class="text-lg font-bold text-gray-400">kW</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: AI & Diagnostics -->
+        <div class="flex flex-col gap-8">
+          <!-- AI Diagnostics -->
+          <div class="card">
+            <div
+              class="px-6 py-5 border-b border-gray-800 bg-gray-800/50 rounded-t-xl flex justify-between items-center"
+            >
+              <h2 class="text-lg font-bold text-white flex items-center">
+                <i class="fas fa-brain text-indigo-600 mr-2"></i> PyTorch Deep
+                Learning
+              </h2>
+              <span
+                class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide"
+                >Active</span
+              >
+            </div>
+            <div class="p-3">
+              <div class="mb-5">
+                <div
+                  class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3 w-full border-b border-gray-100 pb-1"
+                >
+                  Transformer Inference Result
+                </div>
+                <div class="flex items-start gap-3">
+                  <div class="mt-0.5" id="state-icon">
+                    <i class="fas fa-circle-notch fa-spin text-gray-400"></i>
+                  </div>
+                  <div>
+                    <h3
+                      id="current-fault"
+                      class="text-white font-bold text-[17px] leading-snug"
+                    >
+                      Awaiting Sensor Vector...
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="bg-gray-800 rounded-lg p-4 border border-gray-800 mt-2"
+              >
+                <div
+                  class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2"
+                >
+                  Automated Policy Matrix
+                </div>
+                <p
+                  id="current-action"
+                  class="text-sm text-gray-700 font-medium leading-relaxed"
+                >
+                  Initializing Edge connections.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Predictive Maintenance -->
+          <div class="card">
+            <div
+              class="px-6 py-4 border-b border-gray-800 flex items-center justify-between"
+            >
+              <h2 class="text-md font-bold text-white">
+                <i class="fas fa-stopwatch text-purple-600 mr-2"></i> Component
+                Deterioration
+              </h2>
+            </div>
+            <div
+              class="p-3 flex items-center justify-between bg-gradient-to-r from-white to-purple-50 rounded-b-xl border-t-0"
+            >
+              <div>
+                <p class="text-sm font-semibold text-gray-700">Estimated RUL</p>
+                <p class="text-xs text-gray-400 mt-1 max-w-[150px]">
+                  Remaining cycles until critical thermal threshold intersect.
+                </p>
+              </div>
+              <div
+                class="text-right bg-gray-900 p-3 rounded-xl border border-purple-100 shadow-sm"
+              >
+                <div class="flex items-baseline gap-1 justify-end">
+                  <span id="val-rul" class="text-3xl font-black text-gray-100"
+                    >--</span
+                  >
+                </div>
+                <span
+                  class="text-xs font-bold text-purple-500 uppercase tracking-widest mt-1 block"
+                  >cycles left</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Table -->
+      <div class="mt-8 card overflow-hidden">
+        <div
+          class="px-6 py-5 border-b border-gray-800 flex justify-between items-center bg-gray-800"
+        >
+          <h2 class="text-lg font-bold text-white">
+            Audit Log & Ticket Generation
+          </h2>
+          <button
+            class="text-sm text-blue-600 font-semibold hover:text-blue-800 transition"
+          >
+            Download CSV
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-900">
+              <tr>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider"
+                >
+                  Acquisition Time
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider"
+                >
+                  Health Status
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider"
+                >
+                  Neural Classification
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider"
+                >
+                  System Override Taken
+                </th>
+              </tr>
+            </thead>
+            <tbody id="alerts-table" class="bg-gray-900 divide-y divide-gray-100">
+              <tr>
+                <td
+                  colspan="4"
+                  class="px-6 py-10 text-center text-sm text-gray-400"
+                >
+                  <i class="fas fa-spinner fa-spin text-gray-400 mr-2"></i>
+                  Connecting to Cloud Database...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <script src="js/app.js"></script>
+  </body>
+</html>

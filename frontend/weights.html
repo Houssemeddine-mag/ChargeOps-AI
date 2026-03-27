@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Transformer Weights Tracking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      body { font-family: "Inter", sans-serif; background-color: #050505; color: #E2E8F0; color: #111827; }
+      .card { background-color: #0A0A0A; border-color: #1E1E1E; box-shadow: 0 0 10px rgba(0,0,0,0.5); border-color: #1E293B; border: 1px solid #e5e7eb; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+      .table-container { max-height: 350px; overflow-y: auto; }
+      th { position: sticky; top: 0; background: #f9fafb; border-bottom: 2px solid #e5e7eb; }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <nav class="bg-gray-900 border-b border-gray-800 sticky top-0 z-10 w-full shadow-sm">
+      <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-12">
+          <div class="flex items-center">
+            <div class="flex-shrink-0 flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow"><i class="fas fa-network-wired"></i></div>
+              <span class="font-bold text-xl tracking-tight text-white">ChargeOps<span class="text-blue-600 font-light">AI</span></span>
+            </div>
+            <div class="hidden md:ml-10 md:flex md:space-x-8">
+              <a href="index.html" class="border-transparent text-gray-400 hover:border-gray-700 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Supervision</a>
+              <a href="weights.html" class="border-blue-500 text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Transformer System Suivi</a>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+              <span id="system-status-indicator" class="px-3 py-1 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-md text-sm font-semibold flex items-center gap-2">
+                <i class="fas fa-spinner fa-spin"></i> Checking Model...
+              </span>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-black text-white" id="arch-name">AI Model Loading...</h1>
+          <p class="text-sm text-gray-400 mt-1">Full system tracking over trained parameters, weights health, and internal variables.</p>
+        </div>
+      </div>
+
+      <!-- Architecture Summary -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="card p-3 border-t-2 shadow-[0_-2px_10px_rgba(59,130,246,0.2)] border-blue-500">
+          <p class="text-sm font-medium text-gray-400">Inputs Dim</p>
+          <p class="text-xl font-black text-blue-600 mt-1" id="arch-dim">--</p>
+        </div>
+        <div class="card p-3 border-t-2 shadow-[0_-2px_10px_rgba(59,130,246,0.2)] border-gray-500">
+          <p class="text-sm font-medium text-gray-400">Transformer Layers</p>
+          <p class="text-xl font-black text-white mt-1" id="arch-layers">--</p>
+        </div>
+        <div class="card p-3 border-t-2 shadow-[0_-2px_10px_rgba(59,130,246,0.2)] border-gray-500">
+          <p class="text-sm font-medium text-gray-400">Attention Heads</p>
+          <p class="text-xl font-black text-white mt-1" id="arch-heads">--</p>
+        </div>
+        <div class="card p-3 border-t-2 shadow-[0_-2px_10px_rgba(59,130,246,0.2)] border-green-500">
+          <p class="text-sm font-medium text-gray-400">Validation Accuracy</p>
+          <p class="text-xl font-black text-green-600 mt-1" id="arch-accuracy">--</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <!-- Schema Performance Distribution Chart -->
+        <div class="card p-3 col-span-3 lg:col-span-1 border-t-2 shadow-[0_-2px_10px_rgba(59,130,246,0.2)] border-purple-500">
+          <h2 class="text-lg font-bold text-gray-100 border-b border-gray-100 pb-3 mb-4"><i class="fas fa-project-diagram mr-2 text-purple-500"></i> Synethic Test Predictions (Classes)</h2>
+          <div class="relative h-64 w-full"><canvas id="classDistChart"></canvas></div>
+        </div>
+
+        <!-- Distribution Chart -->
+        <div class="card p-3 col-span-3 lg:col-span-2 border-t-2 shadow-[0_-2px_10px_rgba(59,130,246,0.2)] border-indigo-500">
+          <h2 class="text-lg font-bold text-gray-100 border-b border-gray-100 pb-3 mb-4"><i class="fas fa-chart-line mr-2 text-indigo-500"></i> Weights Health Distribution</h2>
+          <div class="relative h-64 w-full"><canvas id="distributionChart"></canvas></div>
+        </div>
+
+        <!-- Tensors Table Tracking -->
+        <div class="card p-0 col-span-3 border-t-2 shadow-[0_-2px_10px_rgba(59,130,246,0.2)] border-gray-800 overflow-hidden">
+          <div class="p-3 border-b border-gray-800 bg-gray-800 flex justify-between items-center">
+             <h2 class="text-lg font-bold text-gray-100"><i class="fas fa-microchip mr-2"></i> Tensors & Parameters Suivi</h2>
+             <span id="param-count" class="text-sm font-mono bg-blue-100 text-blue-800 border border-blue-200 shadow-sm px-2 py-1 rounded">Counting...</span>
+          </div>
+          <div class="table-container">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-800">
+                <tr>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Layer Tensor Name</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Shape</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Mean &Std; Std Dev</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Min &Std; Max Boundaries</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Tensor Status</th>
+                </tr>
+              </thead>
+              <tbody class="bg-gray-900 divide-y divide-gray-100" id="tensors-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script src="js/weights.js"></script>
+  </body>
+</html>

@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChargeOps AI Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8fafc;
+        color: #0f172a;
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .cluster-container {
+        display: grid;
+        grid-template-columns: 1fr 1.5fr 1fr;
+        gap: 1.5rem;
+        flex: 1;
+        padding: 1.5rem;
+        min-height: 0;
+      }
+
+      .cluster-panel {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        padding: 1.25rem;
+        box-shadow:
+          0 4px 6px -1px rgba(0, 0, 0, 0.05),
+          0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        overflow: hidden;
+      }
+
+      .dash-dial-container {
+        position: relative;
+        width: 100%;
+        max-width: 220px;
+        aspect-ratio: 1 / 1;
+        margin: auto;
+      }
+
+      .dial-svg {
+        width: 100%;
+        height: 100%;
+        transform: rotate(-225deg);
+      }
+
+      .dial-bg {
+        fill: transparent;
+        stroke: #e2e8f0;
+        stroke-width: 10;
+        stroke-linecap: round;
+        stroke-dasharray: 628;
+        stroke-dashoffset: 157;
+      }
+
+      .dial-value {
+        fill: transparent;
+        stroke-width: 10;
+        stroke-linecap: round;
+        stroke-dasharray: 628;
+        stroke-dashoffset: 628;
+        transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .dial-blue {
+        stroke: #3b82f6;
+      }
+      .dial-green {
+        stroke: #10b981;
+      }
+      .dial-red {
+        stroke: #ef4444;
+      }
+
+      .dial-center-content {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+      }
+
+      .param-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+      }
+
+      .modern-scroll::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .modern-scroll::-webkit-scrollbar-track {
+        background: #f1f5f9;
+      }
+      .modern-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+      }
+
+      .table-container {
+        flex-shrink: 0;
+        height: 30vh;
+        background: #ffffff;
+        border-top: 1px solid #e2e8f0;
+        padding: 1rem 1.5rem;
+        overflow-y: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Top Minimal Nav -->
+    <nav
+      class="w-full flex items-center justify-between px-6 py-2 bg-white border-b border-gray-200 shrink-0 shadow-sm"
+    >
+      <div class="flex items-center gap-2">
+        <i class="fas fa-bolt text-blue-500 text-lg"></i>
+        <span class="font-bold text-sm tracking-tight text-slate-800"
+          >ChargeOps<span class="text-blue-500 font-light">AI</span></span
+        >
+      </div>
+      <div class="flex items-center gap-4 text-xs font-bold text-slate-500">
+        <a href="weights.html" class="hover:text-blue-600 transition"
+          ><i class="fas fa-network-wired mr-1"></i> Transformer Weights</a
+        >
+      </div>
+    </nav>
+
+    <!-- Main Instrument Cluster -->
+    <main class="cluster-container">
+      <!-- LEFT DIAL: EFFICIENCY & FREQ -->
+      <div class="cluster-panel">
+        <div class="flex justify-between items-start mb-2">
+          <span
+            class="text-xs uppercase font-bold text-slate-400 tracking-wider"
+            >Rendement</span
+          >
+          <i class="fas fa-battery-half text-blue-500/50"></i>
+        </div>
+        <div class="dash-dial-container mb-4">
+          <svg class="dial-svg" viewBox="0 0 220 220">
+            <circle class="dial-bg" cx="110" cy="110" r="100"></circle>
+            <circle
+              id="svg-eff"
+              class="dial-value dial-blue"
+              cx="110"
+              cy="110"
+              r="100"
+            ></circle>
+          </svg>
+          <div
+            class="absolute inset-0 flex flex-col items-center justify-center translate-y-3"
+          >
+            <div class="flex items-baseline gap-1">
+              <span
+                id="val-eff"
+                class="text-4xl sm:text-5xl font-black tracking-tighter text-slate-800"
+                >0</span
+              >
+              <span class="text-lg font-bold text-slate-400">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-auto flex flex-col gap-3">
+          <div class="param-box flex items-center justify-between">
+            <span class="text-[10px] text-slate-400 font-bold uppercase"
+              >Charging Status</span
+            >
+            <span id="val-charging" class="text-xs font-bold text-slate-600"
+              >--</span
+            >
+          </div>
+          <div class="param-box flex items-center justify-between">
+            <span class="text-[10px] text-slate-400 font-bold uppercase"
+              >Frequency</span
+            >
+            <div class="flex items-baseline gap-1">
+              <span id="val-ptx" class="text-sm font-black text-slate-800"
+                >--</span
+              >
+              <span class="text-[9px] text-slate-400">kHz</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER PANEL: TELEMETRY (V & I) -->
+      <div class="cluster-panel border-blue-100">
+        <div class="flex justify-between items-start mb-4">
+          <span class="text-xs uppercase font-bold text-blue-500 tracking-wider"
+            ><i class="fas fa-car mr-2"></i>Live Telemetry</span
+          >
+          <span class="text-xs text-slate-400 font-mono">STATION-01</span>
+        </div>
+
+        <div class="metrics-grid mb-3">
+          <div class="param-box text-center">
+            <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase">
+              Primary Voltage (V1)
+            </p>
+            <div class="flex items-baseline justify-center gap-1">
+              <span class="text-2xl font-black text-slate-700" id="val-v1"
+                >--</span
+              >
+              <span class="text-xs text-slate-400">V</span>
+            </div>
+          </div>
+          <div class="param-box text-center">
+            <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase">
+              Secondary Voltage (V2)
+            </p>
+            <div class="flex items-baseline justify-center gap-1">
+              <span class="text-2xl font-black text-slate-700" id="val-v2"
+                >--</span
+              >
+              <span class="text-xs text-slate-400">V</span>
+            </div>
+          </div>
+          <div class="param-box text-center">
+            <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase">
+              Primary Current (I1)
+            </p>
+            <div class="flex items-baseline justify-center gap-1">
+              <span class="text-2xl font-black text-slate-700" id="val-i1"
+                >--</span
+              >
+              <span class="text-xs text-slate-400">A</span>
+            </div>
+          </div>
+          <div class="param-box text-center">
+            <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase">
+              Secondary Current (I2)
+            </p>
+            <div class="flex items-baseline justify-center gap-1">
+              <span class="text-2xl font-black text-slate-700" id="val-i2"
+                >--</span
+              >
+              <span class="text-xs text-slate-400">A</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 mt-auto">
+          <div class="param-box flex flex-col items-center">
+            <span class="text-[9px] text-slate-400 uppercase font-bold mb-1"
+              >Temp�rature de la Bobine</span
+            >
+            <div class="flex items-baseline gap-1">
+              <span id="val-temp-coil" class="text-sm font-black text-slate-700"
+                >--</span
+              ><span class="text-[9px] text-slate-400">�C</span>
+            </div>
+          </div>
+          <div class="param-box flex flex-col items-center">
+            <span class="text-[9px] text-slate-400 uppercase font-bold mb-1"
+              >Temp�rature de la Pi�ce �lectronique</span
+            >
+            <div class="flex items-baseline gap-1">
+              <span id="val-temp-inv" class="text-sm font-black text-slate-700"
+                >--</span
+              ><span class="text-[9px] text-slate-400">�C</span>
+            </div>
+          </div>
+          <div class="param-box flex flex-col items-center">
+            <span class="text-[9px] text-slate-400 uppercase font-bold mb-1"
+              >Facteur de Qualit� (Q)</span
+            >
+            <span id="val-qfactor" class="text-sm font-black text-slate-700"
+              >--</span
+            >
+          </div>
+          <div class="param-box flex flex-col items-center col-span-3">
+            <span class="text-[10px] text-slate-400 uppercase font-bold mb-1"
+              >Coupling Factor (k)</span
+            >
+            <span id="val-k" class="text-lg font-black text-blue-500">--</span>
+          </div>
+        </div>
+
+        <span id="val-p1" class="hidden"></span>
+        <span id="val-p2" class="hidden"></span>
+      </div>
+
+      <!-- RIGHT DIAL: SYSTEM HEALTH -->
+      <div class="cluster-panel">
+        <div class="flex justify-between items-start mb-2">
+          <span
+            class="text-xs uppercase font-bold text-slate-400 tracking-wider"
+            >System Health</span
+          >
+          <div class="flex items-center gap-2">
+            <div class="relative flex h-2 w-2 mt-0.5">
+              <span
+                id="health-dot-ping"
+                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
+              ></span>
+              <span
+                id="health-dot"
+                class="relative inline-flex rounded-full h-2 w-2 bg-green-500"
+              ></span>
+            </div>
+            <span
+              id="health-alert-text"
+              class="px-1.5 py-0.5 text-[8px] font-bold rounded bg-slate-100 text-slate-500 border border-slate-200"
+              >NO ALERT</span
+            >
+          </div>
+        </div>
+
+        <div class="dash-dial-container mb-4">
+          <svg class="dial-svg" viewBox="0 0 220 220">
+            <circle class="dial-bg" cx="110" cy="110" r="100"></circle>
+            <circle
+              id="svg-health"
+              class="dial-value dial-green"
+              cx="110"
+              cy="110"
+              r="100"
+            ></circle>
+          </svg>
+          <div
+            class="absolute inset-0 flex flex-col items-center justify-center translate-y-3"
+          >
+            <span
+              id="health-index"
+              class="text-4xl sm:text-5xl font-black tracking-tighter text-slate-800"
+              >100%</span
+            >
+            <div id="health-badge" class="hidden"></div>
+          </div>
+        </div>
+
+        <div class="mt-auto flex flex-col gap-3">
+          <div class="param-box">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-[10px] text-slate-400 font-bold uppercase"
+                ><i class="fas fa-microchip text-purple-500 mr-1"></i>
+                Diagnostic</span
+              >
+              <span id="state-icon" class="text-sm"></span>
+            </div>
+            <p
+              id="current-fault"
+              class="text-xs font-bold text-slate-700 truncate"
+            >
+              --
+            </p>
+            <p
+              id="current-action"
+              class="text-[9px] text-slate-400 truncate mt-0.5"
+            >
+              --
+            </p>
+          </div>
+          <div class="param-box flex items-center justify-between">
+            <span class="text-[10px] text-purple-600 font-bold uppercase"
+              >Estimated RUL</span
+            >
+            <div class="flex items-baseline gap-1">
+              <span id="val-rul" class="text-sm font-black text-slate-800"
+                >--</span
+              >
+              <span class="text-[9px] text-slate-400 uppercase"> cycles</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- AI LOG TABLE -->
+    <div class="table-container modern-scroll">
+      <div
+        class="flex justify-between items-center mb-3 sticky top-0 bg-white z-10 pb-2 border-b border-gray-100"
+      >
+        <h2 class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+          <i class="fas fa-brain text-blue-500 mr-2"></i> Mod�le et Maintenance
+          AI History
+        </h2>
+      </div>
+      <table class="min-w-full divide-y divide-gray-100">
+        <thead>
+          <tr>
+            <th
+              scope="col"
+              class="px-3 py-2 text-left text-[9px] font-bold text-slate-400 uppercase tracking-wider"
+            >
+              Time
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-2 text-left text-[9px] font-bold text-slate-400 uppercase tracking-wider"
+            >
+              Status
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-2 text-left text-[9px] font-bold text-slate-400 uppercase tracking-wider"
+            >
+              Neural Classification
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-2 text-left text-[9px] font-bold text-slate-400 uppercase tracking-wider"
+            >
+              System Action Taken
+            </th>
+          </tr>
+        </thead>
+        <tbody id="alerts-table" class="bg-transparent divide-y divide-gray-50">
+          <!-- Rendered by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/app.js?v=3"></script>
+    <script>
+      function updateSvgDials() {
+        const hlthEl = document.getElementById("health-index");
+        const effEl = document.getElementById("val-eff");
+
+        if (!hlthEl || !effEl) return;
+
+        let hlth = parseFloat(hlthEl.textContent);
+        if (isNaN(hlth)) hlth = 0;
+
+        let eff = parseFloat(effEl.textContent);
+        if (isNaN(eff)) eff = 0;
+
+        const hSVG = document.getElementById("svg-health");
+        const eSVG = document.getElementById("svg-eff");
+        const c = 628;
+        const maxArc = c * 0.75;
+
+        if (hSVG) {
+          const capH = Math.min(Math.max(hlth, 0), 100);
+          hSVG.style.strokeDashoffset = c - (capH / 100) * maxArc;
+          if (capH < 50) hSVG.className.baseVal = "dial-value dial-red";
+          else if (capH < 80) hSVG.className.baseVal = "dial-value dial-green";
+          else hSVG.className.baseVal = "dial-value dial-green";
+        }
+        if (eSVG) {
+          const capE = Math.min(Math.max(eff, 0), 100);
+          eSVG.style.strokeDashoffset = c - (capE / 100) * maxArc;
+          if (capE < 80) eSVG.className.baseVal = "dial-value dial-red";
+          else eSVG.className.baseVal = "dial-value dial-blue";
+        }
+      }
+      setInterval(updateSvgDials, 500);
+      setTimeout(updateSvgDials, 100);
+    </script>
+  </body>
+</html>
