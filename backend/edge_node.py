@@ -86,7 +86,10 @@ class EdgeAcquisitionNode:
         # HTTP POST HTTP vers Backend Cloud pour la Tâche 4
         try:
             import requests
-            requests.post("http://127.0.0.1:8000/api/telemetry", json=edge_payload, timeout=0.5)
+            # Update this URL to target the cloud backend instead of local:
+            # We use the provided Render URL
+            target_url = "https://chargeops-ai.onrender.com/api/telemetry"
+            requests.post(target_url, json=edge_payload, timeout=2.0)
         except Exception:
             pass
             

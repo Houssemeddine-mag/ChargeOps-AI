@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:8000/api";
+const API_URL = "/api";
 let distChart = null;
 let classChart = null;
 Chart.defaults.font.family = "'Inter', system-ui, -apple-system, sans-serif";
