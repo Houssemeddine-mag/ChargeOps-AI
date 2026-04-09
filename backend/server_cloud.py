@@ -187,5 +187,6 @@ def get_model_weights():
     return summary
 
 if __name__ == "__main__":
-    print("🚀 Démarrage du Serveur Backend (Tâche 4) sur le port 8000...")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    print(f"🚀 Démarrage du Serveur Backend (Tâche 4) sur le port {port}...")
+    uvicorn.run(app, host="0.0.0.0", port=port)

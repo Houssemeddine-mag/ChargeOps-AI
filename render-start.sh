@@ -3,6 +3,7 @@
 # Start the FastAPI backend server in the background
 # We use the PORT environment variable provided by Render
 cd backend
+PORT="${PORT:-8000}"
 uvicorn server_cloud:app --host 0.0.0.0 --port $PORT &
 
 # Go back to the root directory

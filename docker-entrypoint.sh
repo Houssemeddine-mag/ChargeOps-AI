@@ -3,7 +3,8 @@
 echo "Starting Backend Database & AI FastAPI..."
 # Navigate to backend since the code heavily relies on backend directory paths
 cd /app/backend
-uvicorn server_cloud:app --host 0.0.0.0 --port 8000 &
+PORT="${PORT:-8000}"
+uvicorn server_cloud:app --host 0.0.0.0 --port $PORT &
 
 echo "Waiting for server to start..."
 sleep 3
