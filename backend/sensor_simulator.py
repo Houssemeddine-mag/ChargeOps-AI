@@ -144,55 +144,94 @@ class WPTSensorSimulator:
         return "NORMAL"
 
     def generate_data(self) -> dict:
-        """Simulate and return a data frame of the station."""
-        # Physical Movement Drift is evaluated first to check coupling
-        if self.active_fault != "MISALIGNMENT":
-            self.misalignment = max(0.0, min(15.0, self.misalignment + random.uniform(-0.2, 0.2)))
-        self.coupling_factor = max(0.01, 0.85 - (self.misalignment * 0.06))
+        """Simulate and return a data frame of the station (Smooth Real-time Physics)."""
+        # --- Physical Dynamics ---
+        ambient_temp = 25.0
+        cooling_coil = 0.05 * (self.temp_coil - ambient_temp)
+        cooling_inv = 0.08 * (self.temp_inverter - ambient_temp)
 
-        # IMPORTANT: Station only charges if coupling factor >= 0.75
-        self.is_charging = (self.coupling_factor >= 0.75)
+        # Smooth misalignment drift
+        if self.active_fault == "MISALIGNMENT":
+            self.misalignment = min(15.0, self.misalignment + 0.3 + random.uniform(0, 0.1))
+        else:
+            self.misalignment = max(1.0, self.misalignment - 0.5 + random.uniform(-0.1, 0))
+
+        self.coupling_factor = max(0.01, 0.85 - (self.misalignment * 0.04))
+
+        # IMPORTANT: Station only charges if properly aligned
+        self.is_charging = (self.coupling_factor >= 0.70)
+
+        # Nominal Operational Heating
+        heating_coil = 0.0
+        heating_inv = 0.0
 
         if not self.is_charging:
-            # Voltage fixed as requested
+            # Cooldown Phase
             self.v_primary = 400.0
-            self.i_primary = self.i_secondary = 0.0
-            self.temp_coil = max(25.0, self.temp_coil - 0.5)
-            self.temp_inverter = max(25.0, self.temp_inverter - 0.8)
+            self.i_primary += (0.0 - self.i_primary) * 0.2
+            self.v_secondary = 0.0
+            self.i_secondary = 0.0
             power_tx = power_rx = 0.0
             eta_percent = 0.0
+            self.frequency = 85.0
         else:
-            # Voltage fixed as requested
+            # Active Charging Physics
             self.v_primary = 400.0
-            # Noise & Smoothing ONLY on I_primary
-            self.i_primary = 0.2 * (self.i_primary + random.uniform(-0.5, 0.5)) + 0.8 * 15.0
-
-            # Fault Injection
-            efficiency_drop = self._apply_fault_transformations()
-
-            # Nominal Heating & Degradation 
-            self.temp_coil += random.uniform(-0.1, 0.2)
-            self.temp_inverter += random.uniform(-0.1, 0.25)
             
-            self.thermal_stress_cycles += 1
-            if self.temp_inverter > 60:
-                self.capacitor_esr += 0.0001
+            target_i_primary = 15.0
+            efficiency_drop = 1.0
+            
+            # --- Fault Injection Mapping (Continuous Smooth Effects) ---
+            if self.active_fault == "NORMAL":
+                self.capacitor_esr = max(0.05, self.capacitor_esr - 0.001)
+                
+            elif self.active_fault == "FOD":
+                heating_coil += 2.5 # Rapid heating
+                efficiency_drop = 0.78
+                
+            elif self.active_fault == "CAPACITOR":
+                self.capacitor_esr += 0.002
+                heating_inv += 1.8 # Inverter works harder
+                efficiency_drop = 0.85
+                
+            elif self.active_fault == "INVERTER":
+                target_i_primary = 25.0 # Spike in current draw
+                heating_inv += 2.5
+                efficiency_drop = 0.65
+                
+            elif self.active_fault == "COIL_DEGRADATION":
+                heating_coil += 1.2
+                efficiency_drop = 0.88
+                
+            elif self.active_fault == "FREQUENCY_BREAKDOWN":
+                heating_inv += 1.0
+                # Handled directly inside resonant calculation later
+                
+            # Smooth Current transition + Noise
+            self.i_primary += (target_i_primary - self.i_primary) * 0.1 + random.uniform(-0.3, 0.3)
+            
+            # Normal Load Heating
+            heating_coil += (self.i_primary ** 2) * 0.001
+            heating_inv += (self.i_primary ** 2) * 0.0015
 
             # Core Mathematical Engine
             power_tx, power_rx = self._calculate_resonant_physics(efficiency_drop)
             eta_percent = (power_rx / power_tx) * 100 if power_tx > 0 else 0.0
+            
+        # Apply Thermal Euler Integrator
+        self.temp_coil += heating_coil - cooling_coil
+        self.temp_inverter += heating_inv - cooling_inv
 
-        # Environmental & Cyber Anomalies
-        if self.active_fault != "FOD":
-            self.fod_detected = random.random() < 0.01
+        # Cyber Anomalies
+        self.fod_detected = (self.active_fault == "FOD" and random.random() < 0.9)
         self.lod_detected = random.random() < 0.005
 
         is_attack = random.random() < 0.002
         if is_attack:
             self.temp_coil = 150.0
         else:
-            self.temp_coil = max(20.0, min(120.0, self.temp_coil))
-            self.temp_inverter = max(20.0, min(120.0, self.temp_inverter))
+            self.temp_coil = max(ambient_temp, min(120.0, self.temp_coil))
+            self.temp_inverter = max(ambient_temp, min(120.0, self.temp_inverter))
             
         # Analysis (frequency evaluated globally)
         status_level = self._evaluate_status_level(eta_percent, self.frequency)

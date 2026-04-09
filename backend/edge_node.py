@@ -86,9 +86,8 @@ class EdgeAcquisitionNode:
         # HTTP POST HTTP vers Backend Cloud pour la Tâche 4
         try:
             import requests
-            # Update this URL to target the cloud backend instead of local:
-            # We use the provided Render URL
-            target_url = "https://chargeops-ai.onrender.com/api/telemetry"
+            # Update this URL to target the local background API:
+            target_url = "http://127.0.0.1:8000/api/telemetry"
             requests.post(target_url, json=edge_payload, timeout=2.0)
         except Exception:
             pass
@@ -111,43 +110,52 @@ def run_scenario():
     logging.info('=== DEBUT DE LA MISSION D ACQUISITION WPT ===')
     try:
         while True:
-            logging.info('\n--- SCENARIO 1: Fonctionnement Normal (Tout vert) ---')
+            # A Continuous physics engine where variables naturally build up.
+            logging.info('\n--- ETAPE 1: Initialisation - Fonctionnement Normal (Tout vert) ---')
             node.simulator.set_fault_mode('NORMAL')
-            # Reset properties to normal mode
-            node.simulator.temp_coil = 35.0
-            node.simulator.temp_inverter = 40.0
-            node.simulator.misalignment = 1.0
-            node.simulator.capacitor_esr = 0.05
-            for _ in range(20):
+            for _ in range(25):
                 node.process_and_publish()
                 time.sleep(SAMPLE_RATE)
 
-            logging.info('\n--- SCENARIO 2: Derive Lente (Temperature -> Surveillance) ---')
+            logging.info('\n--- ETAPE 2: Usure lente de la bobine (Derive Temperature) ---')
             node.simulator.set_fault_mode('COIL_DEGRADATION')
-            node.simulator.temp_coil = 52.0 # Force temp > 50 for SURVEILLANCE
-            for _ in range(20):
+            for _ in range(25):
                 node.process_and_publish()
                 time.sleep(SAMPLE_RATE)
 
-            logging.info('\n--- SCENARIO 3: Defaut brusque (Desalignement -> Alerte) ---')
+            logging.info('\n--- ETAPE 3: Normalisation et Refroidissement ---')
+            node.simulator.set_fault_mode('NORMAL')
+            for _ in range(25):
+                node.process_and_publish()
+                time.sleep(SAMPLE_RATE)
+
+            logging.info('\n--- ETAPE 4: Defaut physique (Desalignement lent) ---')
             node.simulator.set_fault_mode('MISALIGNMENT')
-            node.simulator.misalignment = 12.0 # Dropping K-factor to trigger ALERTE
-            for _ in range(20):
+            for _ in range(25):
                 node.process_and_publish()
                 time.sleep(SAMPLE_RATE)
 
-            logging.info('\n--- SCENARIO 4: Defaut critique (Surchauffe massive -> Critique) ---')
+            logging.info('\n--- ETAPE 5: Retour au centrage ---')
+            node.simulator.set_fault_mode('NORMAL')
+            for _ in range(25):
+                node.process_and_publish()
+                time.sleep(SAMPLE_RATE)
+
+            logging.info('\n--- ETAPE 6: Surchauffe massive par corps etranger (FOD -> Critique) ---')
             node.simulator.set_fault_mode('FOD')
-            node.simulator.temp_coil = 80.0 # Temp > 75 for CRITIQUE
-            for _ in range(20):
+            for _ in range(25):
                 node.process_and_publish()
                 time.sleep(SAMPLE_RATE)
 
-            logging.info('\n--- SCENARIO 5: Usure Condensateur (Capacitor -> Surveillance/Alerte) ---')
-            node.simulator.set_fault_mode('CAPACITOR')
-            node.simulator.temp_coil = 40.0
-            node.simulator.capacitor_esr = 0.15 # Force anomalies
-            for _ in range(20):
+            logging.info('\n--- ETAPE 7: Retrait de l objet (Refroidissement Actif) ---')
+            node.simulator.set_fault_mode('NORMAL')
+            for _ in range(25):
+                node.process_and_publish()
+                time.sleep(SAMPLE_RATE)
+
+            logging.info('\n--- ETAPE 8: Degradation Electronique Onduleur ---')
+            node.simulator.set_fault_mode('INVERTER')
+            for _ in range(25):
                 node.process_and_publish()
                 time.sleep(SAMPLE_RATE)
 

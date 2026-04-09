@@ -33,35 +33,58 @@ def analyze_telemetry(data: dict):
         status, fault, action = ai_predict_status(temp_coil, temp_inverter, eff, k_factor, freq_dev, q_factor, v1, i1, v2, i2, p1, p2)
     else:
         status = "NORMAL"
-        fault = "Aucun"
-        action = "Maintenir la charge. Bon fonctionnement."
+        fault = "Fonctionnement Normal"
+        action = "Maintenir la charge en cours. Bon état."
         
-        if temp_coil > 75 or temp_inverter > 85 or k_factor < 0.10 or eff < 80:
+        elec_bad = (eff < 75)
+        temp_high = (temp_coil > 80 or temp_inverter > 85)
+        temp_med = (temp_coil > 65 or temp_inverter > 75)
+        
+        misaligned = (k_factor < 0.12)
+        fod_suspect = (temp_coil > 75 and eff < 80 and k_factor > 0.15)
+        condensateur_bad = (freq_dev > 1500 and temp_inverter > 70)
+        onduleur_bad = (eff < 70 and freq_dev <= 1500)
+        
+        if (temp_high and misaligned and eff < 65) or (condensateur_bad and elec_bad):
             status = "CRITIQUE"
-        elif temp_coil > 60 or temp_inverter > 75 or k_factor < 0.15 or freq_dev > 2000 or eff < 85: 
+            fault = "Anomalie Multi-factorielle"
+            action = "Multiples paramètres critiques. Vérification globale immédiate."
+        elif fod_suspect:
+            status = "CRITIQUE"
+            fault = "FOD (Objet métallique détecté)"
+            action = "Interrompre la charge. Nettoyer la surface du pad primaire."
+        elif condensateur_bad:
             status = "ALERTE"
-        elif temp_coil > 50 or temp_inverter > 60 or k_factor < 0.20 or freq_dev > 1000 or eff < 88: 
+            fault = "Défaut Condensateur (Résonance)"
+            action = "Planifier le remplacement des condensateurs de l'onduleur."
+        elif misaligned:
+            status = "ALERTE"
+            fault = "Désalignement critique"
+            action = "Guidage requis, demander au conducteur de recentrer le véhicule."
+        elif onduleur_bad:
+            status = "CRITIQUE"
+            fault = "Défaut Onduleur"
+            action = "Diagnostic matériel requis sur les MOSFETs de l'onduleur."
+        elif elec_bad and temp_high:
+            status = "CRITIQUE"
+            fault = "Défaut Température (ou + Électrique)"
+            action = "Surchauffe détectée. Relancer le refroidissement."
+        elif elec_bad:
+            status = "CRITIQUE"
+            fault = "Défaut Électronique"
+            action = "Anomalie des paramètres de puissance."
+        elif temp_high:
+            status = "CRITIQUE"
+            fault = "Défaut Température"
+            action = "Surchauffe détectée. Relancer le refroidissement."
+        elif temp_med and eff < 85:
             status = "SURVEILLANCE"
-
-        if status != "NORMAL":
-            if temp_coil > 60 and eff < 85 and k_factor > 0.15:
-                fault = "FOD (Objet métallique détecté sur la bobine)"
-                action = "Interrompre la charge. Nettoyer la surface du pad primaire."
-            elif freq_dev > 1000 and temp_inverter > 60:
-                fault = "Défaut de Résonance (Dégradation Condensateur)"
-                action = "Planifier le remplacement des condensateurs de l'onduleur."
-            elif k_factor < 0.20 and eff < 88:
-                fault = "Désalignement critique du Véhicule"
-                action = "Guidage requis : Demander au conducteur de recentrer le véhicule."        
-            elif eff < 80 and freq_dev <= 1000:
-                fault = "Défaut Électronique (Pertes Onduleur)"
-                action = "Diagnostic matériel requis sur les MOSFETs de l'onduleur."
-            elif temp_coil > 50 and eff >= 85:
-                fault = "Dégradation lente de la bobine (Vieillissement)"
-                action = "Passer la station en maintenance préventive dans les prochains jours."    
-            else:
-                fault = "Anomalie Multi-factorielle ou Cyber-attaque"
-                action = "Vérifier l'intégrité des communications locales."
+            fault = "Vieillissement (Dégradation lente)"
+            action = "Passer la station en maintenance préventive dans les prochains jours."
+        elif eff < 90 and temp_coil > 50:
+            status = "SURVEILLANCE"
+            fault = "Vieillissement (Dégradation lente)"
+            action = "Passer la station en maintenance préventive dans les prochains jours."
 
         # Forcer l'arrêt si critique
         if status == "CRITIQUE":

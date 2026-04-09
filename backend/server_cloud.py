@@ -136,7 +136,7 @@ def get_model_weights():
         accuracy = (correct / 500.0) * 100.0
 
         # Calculate class distribution
-        class_distribution = [0] * 7
+        class_distribution = [0] * 9
         for p in preds:
             class_distribution[p.item()] += 1
     state_dict = torch.load(model_path, map_location="cpu")
@@ -150,12 +150,12 @@ def get_model_weights():
             is_healthy = False
             
     summary = {
-        "architecture": "WPTDiagnosticTransformer (7-Class)",
+        "architecture": "WPTDiagnosticTransformer (9-Class)",
         "layers": 3,
         "d_model": 64,
         "nhead": 4,
         "input_dim": 12,
-        "output_classes": 7,
+        "output_classes": 9,
         "accuracy": round(accuracy, 2),
         "class_predictions_dist": class_distribution,
         "model_status": "🟢 Healthy" if is_healthy else "🔴 Corrupted (NaN/Inf Detected)",
