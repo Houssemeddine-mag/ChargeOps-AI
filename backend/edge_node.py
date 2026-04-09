@@ -86,12 +86,14 @@ class EdgeAcquisitionNode:
         # HTTP POST HTTP vers Backend Cloud pour la Tâche 4
         try:
             import requests
-              import os
-              
-              # Use Render's dynamic PORT if available, otherwise default to 8000
-              api_port = os.environ.get("PORT", "8000")
-              target_url = f"http://127.0.0.1:{api_port}/api/telemetry"
-              
+            import os
+            
+            # Use Render's dynamic PORT if available, otherwise default to 8000
+            api_port = os.environ.get("PORT", "8000")
+            target_url = f"http://127.0.0.1:{api_port}/api/telemetry"
+            
+            requests.post(target_url, json=edge_payload, timeout=2.0)
+        except Exception:
             pass
             
         logging.info(f"[{raw_data['status_level']}] Eff: {edge_efficiency:.1f}% | Temp Bobine Lissé: {filtered_temp_coil:.1f}°C")
