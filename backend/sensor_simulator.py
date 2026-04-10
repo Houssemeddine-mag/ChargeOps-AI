@@ -118,17 +118,14 @@ class WPTSensorSimulator:
         # Fixed secondary voltage matching the primary as requested (update logic if picture differs)
         self.v_secondary = 380.0
 
-        # I1 and I2 are independent margins. I1 hovers around 15A natively.
-        # I2's nominal proportional counterpart to 15A is 20A, subject to its own 3% margin.
-        target_i2 = (self.i_primary / 15.0) * 20.0 
-        margin2 = random.uniform(-0.03, 0.03)
+        # 3% margin error between I1 and I2 as requested
+        margin = random.uniform(-0.03, 0.03)
 
         if self.active_fault == "I1_I2_ERROR":
             # Force the margin to be intentionally bad (e.g. 5% to 8%)
-            margin2 = random.choice([random.uniform(0.04, 0.08), random.uniform(-0.08, -0.04)])
+            margin = random.choice([random.uniform(0.04, 0.08), random.uniform(-0.08, -0.04)])
 
-        # Calculate I2 purely based on its 20A nominal projection and its own independent 3% margin
-        self.i_secondary = max(0.0, target_i2 * (1.0 + margin2))
+        self.i_secondary = min(20.0, max(0.0, self.i_primary * (1.0 + margin)))
 
         return power_tx, power_rx
 
@@ -210,8 +207,8 @@ class WPTSensorSimulator:
                 heating_inv += 1.0
                 # Handled directly inside resonant calculation later
                 
-            # Smooth Current transition + Noise (0.45 represents EXACTLY a +/- 3% margin for I1=15.0A as requested)
-            self.i_primary += (target_i_primary - self.i_primary) * 0.1 + random.uniform(-0.45, 0.45)
+            # Smooth Current transition + Noise
+            self.i_primary += (target_i_primary - self.i_primary) * 0.1 + random.uniform(-0.3, 0.3)
             
             # Normal Load Heating
             heating_coil += (self.i_primary ** 2) * 0.001
