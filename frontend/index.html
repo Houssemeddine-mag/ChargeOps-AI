@@ -20,19 +20,28 @@
         background-color: #f8fafc;
         color: #0f172a;
         margin: 0;
-        height: 100vh;
+        min-height: 100vh;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
       }
 
       .cluster-container {
         display: grid;
-        grid-template-columns: 1fr 1.5fr 1fr;
+        grid-template-columns: 1fr;
         gap: 1.5rem;
         flex: 1;
         padding: 1.5rem;
         min-height: 0;
+      }
+
+      @media (min-width: 1024px) {
+        body {
+          height: 100vh;
+          overflow: hidden;
+        }
+        .cluster-container {
+          grid-template-columns: 1fr 1.5fr 1fr;
+        }
       }
 
       .cluster-panel {
@@ -129,11 +138,20 @@
 
       .table-container {
         flex-shrink: 0;
-        height: 30vh;
+        height: auto;
+        min-height: 400px;
         background: #ffffff;
         border-top: 1px solid #e2e8f0;
         padding: 1rem 1.5rem;
         overflow-y: auto;
+        overflow-x: auto;
+      }
+
+      @media (min-width: 1024px) {
+        .table-container {
+          height: 30vh;
+          min-height: 0;
+        }
       }
     </style>
   </head>

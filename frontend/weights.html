@@ -33,6 +33,7 @@
       .table-container {
         max-height: 480px;
         overflow-y: auto;
+        overflow-x: auto;
         scrollbar-width: thin;
         scrollbar-color: #374151 #0b0c10;
       }
@@ -62,33 +63,33 @@
       <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-12">
           <div class="flex items-center">
-            <div class="flex-shrink-0 flex items-center gap-3">
+            <div class="flex-shrink-0 flex items-center gap-2 sm:gap-3">
               <div
                 class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow"
               >
                 <i class="fas fa-network-wired"></i>
               </div>
-              <span class="font-bold text-xl tracking-tight text-white"
+              <span class="font-bold text-lg sm:text-xl tracking-tight text-white hidden sm:block"
                 >ChargeOps<span class="text-blue-600 font-light">AI</span></span
               >
             </div>
-            <div class="hidden md:ml-10 md:flex md:space-x-8">
+            <div class="ml-4 sm:ml-10 flex space-x-4 sm:space-x-8">
               <a
                 href="index.html"
-                class="border-transparent text-gray-400 hover:border-gray-700 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >Supervision</a
+                class="border-transparent text-gray-400 hover:border-gray-700 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-xs sm:text-sm font-medium"
+                >Dashboard</a
               >
               <a
                 href="weights.html"
-                class="border-blue-500 text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >Transformer System Suivi</a
+                class="border-blue-500 text-white inline-flex items-center px-1 pt-1 border-b-2 text-xs sm:text-sm font-medium"
+                >Transformer</a
               >
             </div>
           </div>
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2 sm:gap-4 hidden sm:flex">
             <span
               id="system-status-indicator"
-              class="px-3 py-1 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-md text-sm font-semibold flex items-center gap-2"
+              class="px-2 sm:px-3 py-1 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-md text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2"
             >
               <i class="fas fa-spinner fa-spin"></i> Checking Model...
             </span>
