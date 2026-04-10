@@ -37,6 +37,12 @@ def analyze_telemetry(data: dict):
         action = "Maintenir la charge en cours. Bon état."
         
         elec_bad = (eff < 75)
+        
+        # Check if Primary or Secondary Current deviates beyond their tight +/- 3% individual error margins
+        # I1 nominal = 15.0A. Limit bounds = [14.55A, 15.45A]
+        # I2 nominal = 20.0A. Limit bounds = [19.40A, 20.60A]
+        i1_i2_error = (i1 < 14.5 or i1 > 15.5 or i2 < 19.3 or i2 > 20.7)
+        
         temp_high = (temp_coil > 80 or temp_inverter > 85)
         temp_med = (temp_coil > 65 or temp_inverter > 75)
         
@@ -69,10 +75,10 @@ def analyze_telemetry(data: dict):
             status = "CRITIQUE"
             fault = "Défaut Température (ou + Électrique)"
             action = "Surchauffe détectée. Relancer le refroidissement."
-        elif elec_bad:
+        elif i1_i2_error or elec_bad:
             status = "CRITIQUE"
-            fault = "Défaut Électronique"
-            action = "Anomalie des paramètres de puissance."
+            fault = "DÃ©faut Ã‰lectronique"
+            action = "Anomalie des paramÃ¨tres de puissance (Erreur de marge ±3% I1/I2 ou baisse efficacité)."
         elif temp_high:
             status = "CRITIQUE"
             fault = "Défaut Température"

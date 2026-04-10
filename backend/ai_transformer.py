@@ -71,16 +71,28 @@ def generate_synthetic_data(samples=12000):
             freq_dev = random.uniform(0, 3500)
             q_factor = random.uniform(10.0, 150.0)
         
-        v1 = random.uniform(200.0, 480.0)
-        i1 = random.uniform(10.0, 80.0)
-        p1 = (v1 * i1) / 1000.0
+        v1 = random.uniform(390.0, 410.0)
         
-        p2 = p1 * (eff / 100.0)
-        v2 = v1 * random.uniform(0.8, 1.0)
-        if v2 <= 0: v2 = 0.1
-        i2 = (p2 * 1000.0) / v2
-
+        # Implement independent 3% margins around 15A and 20A for training data
+        if is_normal:
+            margin_i1 = random.uniform(-0.03, 0.03)
+            margin_i2 = random.uniform(-0.03, 0.03)
+        else:
+            # Under anomalous conditions, the margins can stray vastly beyond 3% independent bounds
+            margin_i1 = random.uniform(-0.15, 0.15)
+            margin_i2 = random.uniform(-0.15, 0.15)
+            
+        i1 = 15.0 * (1.0 + margin_i1)
+        i2 = 20.0 * (1.0 + margin_i2)
+        v2 = v1 * random.uniform(0.85, 0.98)
+        
+        p1 = (v1 * i1) / 1000.0
+        p2 = (v2 * i2) / 1000.0
+        
         fault_class = 0 
+        
+        # New explicit condition for the Electronique (Error I1/I2) mismatch class
+        i1_i2_error = (abs(margin_i1) > 0.04 or abs(margin_i2) > 0.04)
         
         elec_bad = (eff < 75)
         temp_high = (temp_coil > 80 or temp_inv > 85)
@@ -103,7 +115,7 @@ def generate_synthetic_data(samples=12000):
             fault_class = 4 # Onduleur
         elif elec_bad and temp_high:
             fault_class = 7 # Température + Electrique
-        elif elec_bad:
+        elif i1_i2_error or elec_bad:
             fault_class = 6 # Electronique
         elif temp_high:
             fault_class = 7 # Température
